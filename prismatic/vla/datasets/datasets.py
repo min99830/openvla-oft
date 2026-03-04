@@ -172,7 +172,12 @@ class RLDSDataset(IterableDataset):
         return make_interleaved_dataset(**rlds_config)
 
     def __iter__(self) -> Dict[str, Any]:
-        for rlds_batch in self.dataset.as_numpy_iterator():
+        dataset = self.dataset
+        worker_info = torch.utils.data.get_worker_info()
+        if worker_info is not None:
+            dataset = dataset.shard(worker_info.num_workers, worker_info.id)
+
+        for rlds_batch in dataset.as_numpy_iterator():
             yield self.batch_transform(rlds_batch)
 
     def __len__(self) -> int:
